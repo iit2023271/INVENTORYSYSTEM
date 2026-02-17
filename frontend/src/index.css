@@ -1,0 +1,247 @@
+/* ============================================================
+   INDEX.CSS — GLOBAL STYLES FOR THE BAKERY APP
+
+   This file styles the entire app. Because it's imported in
+   index.js (the root file), these styles apply everywhere.
+
+   Think of this like a "theme file" — colours, fonts, spacing,
+   button shapes etc. are all defined here so every page looks
+   consistent without repeating styles in every component.
+   ============================================================ */
+
+
+/* ===============================
+   BODY — BASE PAGE STYLES
+   Applies to the entire app background and default text
+   =============================== */
+
+body {
+  margin: 0;                                    /* remove default browser margin */
+  font-family: "Segoe UI", Arial, sans-serif;  /* clean, modern font */
+  background-color: #fff7ed;                   /* warm cream — gives a bakery feel */
+  color: #3b2f2f;                              /* dark brown default text colour */
+}
+
+
+/* ===============================
+   .container — PAGE WRAPPER
+   Every page wraps its content in <div className="container">
+   This keeps content centered and at a readable mobile width
+   =============================== */
+
+.container {
+  max-width: 420px;   /* mobile-first — content never wider than 420px */
+  margin: auto;       /* centers the container horizontally on wide screens */
+  padding: 16px;      /* breathing room around content on small screens */
+}
+
+
+/* ===============================
+   .card — WHITE CONTENT BOXES
+   Used all over the app for sections, forms, and product cards.
+   e.g. <div className="card"> ... </div>
+   =============================== */
+
+.card {
+  background: #ffffff;
+  padding: 16px;
+  border-radius: 14px;                          /* rounded corners — soft bakery feel */
+  margin-bottom: 16px;                          /* space between stacked cards */
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08); /* subtle drop shadow for depth */
+}
+
+
+/* ===============================
+   HEADINGS
+   =============================== */
+
+h2 {
+  text-align: center;
+  color: #8b4513;      /* chocolate brown — bakery brand colour */
+  margin-bottom: 12px;
+}
+
+h3 {
+  color: #5a3825;      /* slightly lighter brown */
+  margin-bottom: 8px;
+}
+
+
+/* ===============================
+   INPUT & SELECT FIELDS
+   Styles every <input> and <select> element in the app
+   =============================== */
+
+input,
+select {
+  width: 100%;                 /* full width inside their container */
+  padding: 12px;               /* comfortable tap target on mobile */
+  font-size: 15px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  border: 1px solid #d6bfa9;  /* warm beige border */
+  background-color: #fffdfb;  /* very slightly warm white */
+  display: block;              /* ensures inputs stack vertically */
+  box-sizing: border-box;      /* padding included in width calculation */
+}
+
+/* Highlight the active/focused field with a warm orange border */
+input:focus,
+select:focus {
+  outline: none;              /* remove the default browser blue outline */
+  border-color: #c96b2c;     /* bakery orange — clear visual feedback */
+}
+
+/* File inputs need less padding than regular text inputs */
+input[type="file"] {
+  padding: 6px;
+}
+
+
+/* ===============================
+   BUTTONS
+   The default button style used throughout the app
+   =============================== */
+
+button {
+  width: 100%;                /* full width by default */
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;           /* semi-bold */
+  cursor: pointer;
+  background-color: #c96b2c; /* bakery orange — main brand colour */
+  color: white;
+  border: none;
+  display: block;
+}
+
+/* Slightly darker shade on hover — shows the button is clickable */
+button:hover:not(:disabled) {
+  background-color: #b35d22;
+}
+
+/* Greyed out and not clickable when disabled
+   e.g. the Save button while data is loading */
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Override for danger/delete buttons that use red (#f44336) inline style.
+   The !important makes sure this wins over the inline style. */
+button[style*="f44336"] {
+  background-color: #e53935 !important;
+}
+
+
+/* ===============================
+   PRODUCT IMAGES (inside .card)
+   Default image style for product listings
+   =============================== */
+
+.card img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;          /* crops the image to fill the box without stretching */
+  border-radius: 12px;
+  margin-bottom: 8px;
+  background-color: #f5eee8; /* warm beige shown while image is loading */
+}
+
+
+/* ===============================
+   PARAGRAPH TEXT
+   =============================== */
+
+p {
+  font-size: 14px;
+  margin: 6px 0;
+}
+
+
+/* ===============================
+   FLEX ROWS INSIDE CARDS
+   Adds default gap to any flex container inside a card
+   =============================== */
+
+.card div[style*="display: flex"] {
+  gap: 8px;
+}
+
+
+/* ===============================
+   MOBILE OPTIMISATION
+   Extra tweaks for very small phone screens (under 480px wide)
+   =============================== */
+
+@media (max-width: 480px) {
+  button {
+    font-size: 14px; /* slightly smaller text on tiny screens */
+  }
+}
+
+
+/* ===============================
+   PRINT STYLES
+   Applied when the receipt is printed using window.print().
+   Hides buttons so the printed receipt looks clean.
+   =============================== */
+
+@media print {
+  button {
+    display: none;     /* no buttons on paper */
+  }
+
+  body {
+    background: white; /* clean white background for printing */
+  }
+}
+
+
+/* ===============================
+   BAR CHART STYLES
+   Used in OrdersSummary.js and Reports.js.
+   Draws simple horizontal bar charts with NO external library.
+
+   Usage in JSX:
+     <div className="bar-row">
+       <div className="bar-label">
+         <span>Cakes</span>
+         <strong>24</strong>
+       </div>
+       <div className="bar-container">
+         <div className="bar-fill" style={{ width: "75%" }} />
+       </div>
+     </div>
+
+   The width % is calculated in JS as: (qty / maxQty) * 100
+   =============================== */
+
+/* Wrapper for one full bar (label + track) */
+.bar-row {
+  margin-bottom: 10px;
+}
+
+/* Label row: name on the left, count on the right */
+.bar-label {
+  font-size: 14px;
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* The grey track/background the coloured bar sits inside */
+.bar-container {
+  background: #f1f1f1;
+  border-radius: 6px;
+  overflow: hidden;    /* clips the coloured bar so it stays inside the track */
+  height: 16px;
+}
+
+/* The coloured part — its width is set dynamically with inline style in JS */
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #c96b2c, #ff9800); /* warm orange gradient */
+  border-radius: 6px;
+}
