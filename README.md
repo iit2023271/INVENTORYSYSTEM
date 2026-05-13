@@ -8,7 +8,7 @@
 
 [![Live Kiosk](https://img.shields.io/badge/🟢%20Live%20Kiosk-inventorysystem--silk.vercel.app-brightgreen?style=for-the-badge)](https://inventorysystem-silk.vercel.app/menu)
 
-[![GitHub](https://img.shields.io/badge/](https://github.com/iit2023271/INVENTORYSYSTEM)
+[![GitHub](https://img.shields.io/badge/GitHub-iit2023271-181717?style=for-the-badge&logo=github)](https://github.com/iit2023271/INVENTORYSYSTEM)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
 <br/>
