@@ -79,8 +79,6 @@ The Bakery Inventory & Kiosk System is a production-ready, full-stack web applic
 
 ## 📸 Screenshots
 
-> Screenshots are shown in a compact gallery so the README stays easy to scan on GitHub.
-> To add your own: create a folder `assets/screenshots/` in the repo root and upload your images there, then they will render automatically below.
 
 <!-- 
   HOW TO ADD SCREENSHOTS:
@@ -178,7 +176,7 @@ The Bakery Inventory & Kiosk System is a production-ready, full-stack web applic
 │   │   Customer Kiosk      │    │      Owner Dashboard       │   │
 │   │   /menu               │    │   /login  /dashboard       │   │
 │   │   /checkout           │    │   /orders /products  etc.  │   │
-│   │   /orders-summary     │    │                            │   │
+│   │        │    │                            │   │
 │   │   (Public Routes)     │    │   (JWT Protected Routes)   │   │
 │   └──────────┬────────────┘    └──────────────┬─────────────┘   │
 │              │                                │                  │
@@ -260,7 +258,7 @@ Customer arrives at kiosk screen  →  /menu
              │
              ▼
   ┌──────────────────────┐
-  │  Token Number Screen │  ← /orders-summary (token display)
+  │  Token Number Screen │  ← 
   │  shown on kiosk      │     Customer waits, shows token at counter
   └──────────────────────┘
 ```
@@ -472,7 +470,7 @@ Owner opens Reports page  →  /reports
 |---|---|---|
 | 1 | `/menu` | Large-screen kiosk product grid. Shows all active products with Cloudinary images, current prices, and live stock status. Products with zero stock are hidden. Customers browse by category and add items to the cart. |
 | 2 | `/checkout` | Cart review screen with quantity controls and a live running total. Customer enters their name and phone number. On confirmation, the order is submitted to the backend with `priceAtSale` locked per item. |
-| 3 | `/orders-summary` | Token number receipt screen displayed after a successful order. The large token number tells the customer what to quote at the counter when their order is ready. Also used by the owner as a read-only order summary list. |
+| 3 | | Token number receipt screen displayed after a successful order. The large token number tells the customer what to quote at the counter when their order is ready. Also used by the owner as a read-only order summary list. |
 
 ---
 
