@@ -7,8 +7,8 @@
 <br/>
 
 [![Live Kiosk](https://img.shields.io/badge/🟢%20Live%20Kiosk-inventorysystem--silk.vercel.app-brightgreen?style=for-the-badge)](https://inventorysystem-silk.vercel.app/menu)
-[![Owner Dashboard](https://img.shields.io/badge/🔐%20Owner%20Dashboard-Login-blue?style=for-the-badge)](https://inventorysystem-silk.vercel.app)
-[![GitHub](https://img.shields.io/badge/GitHub-iit2023271-181717?style=for-the-badge&logo=github)](https://github.com/iit2023271/INVENTORYSYSTEM)
+
+[![GitHub](https://img.shields.io/badge/](https://github.com/iit2023271/INVENTORYSYSTEM)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
 
 <br/>
@@ -921,12 +921,7 @@ Default credentials created by the script:
 
 ---
 
-### 🏷 Categories
 
-| Method | Endpoint | Description | Auth |
-|---|---|---|---|
-| `GET` | `/api/categories` | All product categories | ❌ |
-| `POST` | `/api/categories` | Add new category | ✅ |
 
 ---
 
@@ -938,11 +933,7 @@ Default credentials created by the script:
 │  _id · email · password(bcrypt) · createdAt          │
 └──────────────────────────────────────────────────────┘
 
-┌──────────────────────────────────────────────────────┐
-│  Category                                            │
-│  _id · name · description                           │
-└─────────────────────────┬────────────────────────────┘
-                          │ ref
+                          
 ┌─────────────────────────▼────────────────────────────┐
 │  Product                                             │
 │  _id · name · category(ref) · imageUrl              │
@@ -1012,9 +1003,13 @@ Deleting a product or raw material sets an `isDeleted: true` flag rather than re
 
 ---
 
+
+### 6.Everything is Mobile Friendl
+
+Everyting can be controlled in the mobile itself.so this is the biggest advantage. assuming  owner doesnt know any technical knowledge, this website is made for them.
 ## 👤 Author
 
-**Vishnu** — Full-stack developer · IIT Bhilai (iit2023271)
+**SALADI VISHNU VARDHAN** — Full-stack developer · IIIT ALLAHABAD 
 
 Built this system to solve a real operational problem: replacing the paper-and-shouting workflow of a busy bakery counter with a clean digital kiosk and owner dashboard — from customer token to end-of-day profit report.
 
