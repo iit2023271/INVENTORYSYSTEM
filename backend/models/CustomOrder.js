@@ -93,6 +93,8 @@ const customOrderSchema = new mongoose.Schema(
       required: true
     },
 
+
+
     // Current state of the order
     // enum = only these string values are allowed; others cause a ValidationError
     status: {
@@ -101,11 +103,15 @@ const customOrderSchema = new mongoose.Schema(
       default: "Pending" // All new orders start as Pending
     },
 
+
     // Set when status changes to "Completed" (used in profit reports)
     // Optional field — only exists on completed orders
     completedAt: {
       type: Date
-    }
+    },
+    cancelledAt: {
+  type: Date
+}
 
     // Note: cancelledAt is handled in the controller but not defined in the schema.
     // Mongoose will still save it because of schema flexibility, but defining it

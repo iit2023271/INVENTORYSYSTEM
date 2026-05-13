@@ -51,7 +51,7 @@ function DeletedProducts() {
             {/* Show product image with reduced opacity to signal it's inactive */}
             {p.image && (
               <img
-                src={`${process.env.REACT_APP_API_URL}/${p.image}`}
+                src={p.image}
                 alt={p.name}
                 style={{ width: "100%", height: "140px", objectFit: "cover", borderRadius: "8px", marginBottom: "10px", opacity: 0.6 }}
               />

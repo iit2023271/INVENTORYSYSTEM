@@ -6,51 +6,61 @@
 // saved so they stay logged in across pages.
 // ============================================================
 
-import { useState } from "react"; // useState lets us store values that can change
+import { useState } from "react";
 
 function Login() {
-  // --- STATE VARIABLES ---
-  // These are like "boxes" that hold data and update the screen when changed
-  const [email, setEmail] = useState("");       // stores what user types in email box
-  const [password, setPassword] = useState(""); // stores what user types in password box
-  const [message, setMessage] = useState("");   // stores error messages to show user
+  const [email,    setEmail]    = useState("");
+  const [password, setPassword] = useState("");
+  const [message,  setMessage]  = useState("");
+  const [loading,  setLoading]  = useState(false); // bonus: disable button while logging in
 
-  // --- HANDLE LOGIN ---
-  // This function runs when the user clicks the Login button
   const handleLogin = async () => {
-    // Send email + password to the backend API
-    const res = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
-      method: "POST",                                    // POST = sending data to server
-      headers: { "Content-Type": "application/json" },  // telling server we're sending JSON
-      body: JSON.stringify({ email, password }),         // convert JS object to JSON string
-    });
-
-    const data = await res.json(); // convert server's response to JS object
-
-    if (data.token) {
-      // Login successful — save the token in localStorage (browser storage)
-      // This token is used to prove identity on every other page
-      localStorage.setItem("token", data.token);
-      window.location.reload(); // refresh the app so it shows the dashboard
-    } else {
-      // Login failed — show error message
-      setMessage("Wrong email or password");
+    if (!email || !password) {
+      setMessage("Please enter both email and password");
+      return;
     }
+
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        window.location.reload();
+      } else {
+        setMessage("Wrong email or password");
+      }
+    } catch {
+      setMessage("Network error. Please try again.");
+    }
+
+    setLoading(false);
   };
 
-  // --- WHAT GETS SHOWN ON SCREEN ---
+  // ✅ FIX B15: Submit on Enter key press
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleLogin();
+  };
+
   return (
     <div
       className="container"
       style={{
-        minHeight: "100vh",       // fills full screen height
+        minHeight: "100vh",
         display: "flex",
-        alignItems: "center",     // centers vertically
-        justifyContent: "center", // centers horizontally
+        alignItems: "center",
+        justifyContent: "center",
         padding: "16px",
       }}
     >
-      {/* The white card/box in the center */}
       <div
         className="card"
         style={{
@@ -65,35 +75,42 @@ function Login() {
           🍰 Bakery Owner Login
         </h2>
 
-        {/* EMAIL INPUT */}
         <label style={{ fontWeight: "600" }}>Email</label>
         <input
           type="email"
           placeholder="Enter owner email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)} // update email state as user types
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setMessage(""); // ✅ FIX B16: clear error on every keystroke
+          }}
+          onKeyDown={handleKeyDown} // ✅ FIX B15: Enter submits
           style={{ marginBottom: "12px" }}
+          autoComplete="email"
         />
 
-        {/* PASSWORD INPUT */}
         <label style={{ fontWeight: "600" }}>Password</label>
         <input
           type="password"
           placeholder="Enter password"
           value={password}
-          onChange={(e) => setPassword(e.target.value)} // update password state as user types
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setMessage(""); // ✅ FIX B16: clear error on every keystroke
+          }}
+          onKeyDown={handleKeyDown} // ✅ FIX B15: Enter submits
           style={{ marginBottom: "16px" }}
+          autoComplete="current-password"
         />
 
-        {/* LOGIN BUTTON */}
         <button
-          onClick={handleLogin} // calls our handleLogin function above
+          onClick={handleLogin}
+          disabled={loading}
           style={{ width: "100%", padding: "10px", fontSize: "15px", fontWeight: "600" }}
         >
-          Login
+          {loading ? "Logging in..." : "Login"}
         </button>
 
-        {/* ERROR MESSAGE — only shows if message is not empty */}
         {message && (
           <p style={{ marginTop: "12px", textAlign: "center", color: "red", fontSize: "14px" }}>
             {message}

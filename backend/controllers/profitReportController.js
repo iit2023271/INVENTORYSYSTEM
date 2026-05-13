@@ -31,207 +31,188 @@
 //   was handed over and payment collected. That's the relevant date.
 // ============================================================
 
-const Order       = require("../models/Order");
+const Order = require("../models/Order");
 const RawPurchase = require("../models/RawPurchase");
 const CustomOrder = require("../models/CustomOrder");
-
 
 // ============================================================
 // GET DAILY PROFIT REPORT
 // Route: GET /api/reports/profit?date=2024-12-25
-// Returns: { date, totalSales, totalExpense, profit }
 // ============================================================
 exports.getDailyProfit = async (req, res) => {
   try {
-
-    // ── STEP 1: Determine the target date ────────────────────
     let selectedDate = new Date();
-
     if (req.query.date) {
       selectedDate = new Date(req.query.date);
     }
 
-    // Build start and end of day timestamps
-    const startOfDay = new Date(selectedDate);
-    startOfDay.setHours(0, 0, 0, 0);
+    // B6 fix also applied — UTC-safe boundaries
+    const startOfDay = new Date(
+      req.query.date
+        ? req.query.date + "T00:00:00.000Z"
+        : new Date().toISOString().slice(0, 10) + "T00:00:00.000Z",
+    );
+    const endOfDay = new Date(
+      req.query.date
+        ? req.query.date + "T23:59:59.999Z"
+        : new Date().toISOString().slice(0, 10) + "T23:59:59.999Z",
+    );
 
-    const endOfDay = new Date(selectedDate);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    // ── STEP 2: Calculate normal order sales ──────────────────
-    // Aggregate pipeline:
-    //   $match → only completed orders, completed on this specific day
-    //   $group → sum all totalAmount values into "totalSales"
+    // Normal order sales — filter by completedAt (unchanged, was correct)
     const salesAgg = await Order.aggregate([
       {
         $match: {
-          status:      "Completed",
-          completedAt: { $gte: startOfDay, $lte: endOfDay } // completed on this day
-        }
+          status: "Completed",
+          completedAt: { $gte: startOfDay, $lte: endOfDay },
+        },
       },
       {
         $group: {
-          _id:        null,              // null = group ALL into a single result
-          totalSales: { $sum: "$totalAmount" } // sum up the totalAmount field
-        }
-      }
+          _id: null,
+          totalSales: { $sum: "$totalAmount" },
+        },
+      },
     ]);
-
-    // salesAgg returns an array. If no results → []. Use ?. and || 0 as fallback.
     const orderSales = salesAgg[0]?.totalSales || 0;
 
-    // ── STEP 3: Calculate custom order sales ──────────────────
-    // Custom orders use deliveryDate instead of completedAt
+    // Custom order sales — filter by completedAt
     const customSalesAgg = await CustomOrder.aggregate([
       {
         $match: {
-          status:       "Completed",
-          deliveryDate: { $gte: startOfDay, $lte: endOfDay }
-        }
+          status: "Completed",
+          completedAt: { $gte: startOfDay, $lte: endOfDay },
+          // Use completedAt for consistency (deliveryDate is the planned date,
+          // not necessarily when payment was received)
+        },
       },
       {
         $group: {
-          _id:        null,
-          totalSales: { $sum: "$totalPrice" } // custom orders use totalPrice field
-        }
-      }
+          _id: null,
+          totalSales: { $sum: "$totalPrice" },
+        },
+      },
     ]);
-
     const customSales = customSalesAgg[0]?.totalSales || 0;
 
-    // Combine both types of sales
     const totalSales = orderSales + customSales;
 
-    // ── STEP 4: Calculate raw material expenses ───────────────
-    // Include purchases where EITHER purchaseDate OR createdAt falls on this day.
-    // This handles cases where purchaseDate might not be set correctly.
+    // ✅ FIX B12: Added status: "Done" — only count confirmed expenses,
+    // matching the behaviour of expenseReportController.
+    // ❌ OLD: no status filter — counted Pending purchases too, inflating expenses
     const expenseAgg = await RawPurchase.aggregate([
       {
         $match: {
+          status: "Done", // ← ADDED
           $or: [
             { purchaseDate: { $gte: startOfDay, $lte: endOfDay } },
-            { createdAt:    { $gte: startOfDay, $lte: endOfDay } }
-          ]
-        }
+            { createdAt: { $gte: startOfDay, $lte: endOfDay } },
+          ],
+        },
       },
       {
         $group: {
-          _id:          null,
-          totalExpense: { $sum: "$totalCost" }
-        }
-      }
+          _id: null,
+          totalExpense: { $sum: "$totalCost" },
+        },
+      },
     ]);
-
     const totalExpense = expenseAgg[0]?.totalExpense || 0;
 
-    // ── STEP 5: Calculate profit and respond ──────────────────
     const profit = totalSales - totalExpense;
 
     res.json({
       date: startOfDay,
       totalSales,
       totalExpense,
-      profit  // positive = profit made, negative = loss
+      profit,
     });
-
   } catch (error) {
     console.error("DAILY PROFIT ERROR:", error);
     res.status(500).json({ message: "Failed to calculate profit" });
   }
 };
 
-
 // ============================================================
 // GET PROFIT REPORT FOR A DATE RANGE
 // Route: GET /api/reports/profit/range?from=2024-12-01&to=2024-12-31
-// Returns: { from, to, totalSales, totalExpense, profit }
+//
+// B7 FIX: Changed Order filter from createdAt → completedAt.
+// This makes the range report consistent with the daily report.
 // ============================================================
 exports.getRangeProfit = async (req, res) => {
   try {
-
     const { from, to } = req.query;
 
-    // ── Validate: both from and to dates are required ─────────
     if (!from || !to) {
       return res.status(400).json({ message: "From and To dates required" });
     }
 
-    // Build start and end timestamps for the full date range
-    const start = new Date(from);
-    start.setHours(0, 0, 0, 0);
+    // B6 fix: UTC-safe boundaries
+    const start = new Date(from + "T00:00:00.000Z");
+    const end = new Date(to + "T23:59:59.999Z");
 
-    const end = new Date(to);
-    end.setHours(23, 59, 59, 999);
-
-    // ── STEP 1: Normal order sales in range ───────────────────
-    // NOTE: Uses createdAt here (not completedAt) — slight inconsistency
-    // with the daily report. In practice, consider standardizing.
+    // ✅ FIX B7: Changed from createdAt to completedAt
+    // ❌ OLD: createdAt → daily and range reports counted the same order on different dates
     const salesAgg = await Order.aggregate([
       {
         $match: {
-          status:    "Completed",
-          createdAt: { $gte: start, $lte: end }
-        }
+          status: "Completed",
+          completedAt: { $gte: start, $lte: end }, // ← FIXED (was createdAt)
+        },
       },
       {
         $group: {
-          _id:        null,
-          totalSales: { $sum: "$totalAmount" }
-        }
-      }
+          _id: null,
+          totalSales: { $sum: "$totalAmount" },
+        },
+      },
     ]);
-
     const orderSales = salesAgg[0]?.totalSales || 0;
 
-    // ── STEP 2: Custom order sales in range ───────────────────
     const customSalesAgg = await CustomOrder.aggregate([
       {
         $match: {
-          status:       "Completed",
-          deliveryDate: { $gte: start, $lte: end }
-        }
+          status: "Completed",
+          completedAt: { $gte: start, $lte: end },
+        },
       },
       {
         $group: {
-          _id:        null,
-          totalSales: { $sum: "$totalPrice" }
-        }
-      }
+          _id: null,
+          totalSales: { $sum: "$totalPrice" },
+        },
+      },
     ]);
-
     const customSales = customSalesAgg[0]?.totalSales || 0;
-
     const totalSales = orderSales + customSales;
 
-    // ── STEP 3: Raw material expenses in range ────────────────
+    // ✅ FIX B12: Added status: "Done" — consistent with expenseReport
     const expenseAgg = await RawPurchase.aggregate([
       {
         $match: {
+          status: "Done", // ← ADDED
           $or: [
             { purchaseDate: { $gte: start, $lte: end } },
-            { createdAt:    { $gte: start, $lte: end } }
-          ]
-        }
+            { createdAt: { $gte: start, $lte: end } },
+          ],
+        },
       },
       {
         $group: {
-          _id:          null,
-          totalExpense: { $sum: "$totalCost" }
-        }
-      }
+          _id: null,
+          totalExpense: { $sum: "$totalCost" },
+        },
+      },
     ]);
-
     const totalExpense = expenseAgg[0]?.totalExpense || 0;
 
-    // ── STEP 4: Respond with the range report ─────────────────
     res.json({
-      from:         start,
-      to:           end,
+      from: start,
+      to: end,
       totalSales,
       totalExpense,
-      profit: totalSales - totalExpense
+      profit: totalSales - totalExpense,
     });
-
   } catch (error) {
     console.error("RANGE PROFIT ERROR:", error);
     res.status(500).json({ message: "Failed to load range report" });

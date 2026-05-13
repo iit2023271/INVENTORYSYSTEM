@@ -1,37 +1,37 @@
 // ============================================================
 // ADD CUSTOM ORDER PAGE
 // Used for special bakery orders (e.g. custom birthday cake).
-// The owner fills in customer details, delivery time, order 
+// The owner fills in customer details, delivery time, order
 // notes, price, and advance payment.
 //
 // After saving, a WhatsApp receipt link is generated so the
 // owner can instantly send order details to the customer.
 // ============================================================
 
-import { useState }     from "react";
-import { useNavigate }  from "react-router-dom";
-import Header           from "../components/Header";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Header from "../components/Header";
 
 function AddCustomOrder() {
   const navigate = useNavigate();
-  const token    = localStorage.getItem("token");
+  const token = localStorage.getItem("token");
 
   // --- FORM STATE ---
   // All fields stored together in one object for cleaner code
   const [form, setForm] = useState({
-    customerName:     "",
-    customerPhone:    "",
-    notes:            "",    // custom cake details written by owner
-    totalPrice:       "",
-    advancePaid:      "",
+    customerName: "",
+    customerPhone: "",
+    notes: "", // custom cake details written by owner
+    totalPrice: "",
+    advancePaid: "",
     deliveryDateTime: "",
   });
 
   // --- OTHER STATES ---
-  const [errors,     setErrors]     = useState({});   // validation errors per field
-  const [loading,    setLoading]    = useState(false); // true while API call is running
-  const [savedOrder, setSavedOrder] = useState(null);  // holds the saved order from backend
-  const [success,    setSuccess]    = useState(false); // true after successful save
+  const [errors, setErrors] = useState({}); // validation errors per field
+  const [loading, setLoading] = useState(false); // true while API call is running
+  const [savedOrder, setSavedOrder] = useState(null); // holds the saved order from backend
+  const [success, setSuccess] = useState(false); // true after successful save
 
   // --- VALIDATION ---
   // Checks that all required fields are filled in correctly
@@ -44,12 +44,13 @@ function AddCustomOrder() {
 
     if (!form.customerPhone.trim())
       newErrors.customerPhone = "Phone number is required";
+    else if (!/^\d{10}$/.test(form.customerPhone.trim()))
+      newErrors.customerPhone = "Enter a valid 10-digit phone number";
 
     if (!form.deliveryDateTime)
       newErrors.deliveryDateTime = "Delivery date & time required";
 
-    if (!form.notes.trim())
-      newErrors.notes = "Order notes are mandatory";
+    if (!form.notes.trim()) newErrors.notes = "Order notes are mandatory";
 
     if (!form.totalPrice || Number(form.totalPrice) <= 0)
       newErrors.totalPrice = "Enter valid total price";
@@ -67,7 +68,7 @@ function AddCustomOrder() {
   // e.target.name matches the "name" attribute on each input
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value }); // update just the changed field
-    setErrors({ ...errors, [e.target.name]: "" });          // clear that field's error
+    setErrors({ ...errors, [e.target.name]: "" }); // clear that field's error
   };
 
   // --- SUBMIT THE ORDER ---
@@ -77,18 +78,24 @@ function AddCustomOrder() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/custom-orders`, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          customerName:  form.customerName,
-          customerPhone: form.customerPhone,
-          notes:         form.notes,
-          totalPrice:    Number(form.totalPrice),
-          advancePaid:   Number(form.advancePaid || 0), // default 0 if not entered
-          deliveryDate:  form.deliveryDateTime,
-        }),
-      });
+      const res = await fetch(
+        `${process.env.REACT_APP_API_URL}/api/custom-orders`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            customerName: form.customerName,
+            customerPhone: form.customerPhone,
+            notes: form.notes,
+            totalPrice: Number(form.totalPrice),
+            advancePaid: Number(form.advancePaid || 0), // default 0 if not entered
+            deliveryDate: form.deliveryDateTime,
+          }),
+        },
+      );
 
       if (res.ok) {
         const order = await res.json();
@@ -105,7 +112,8 @@ function AddCustomOrder() {
   };
 
   // Calculate the balance (total minus advance) — shown live as user types
-  const balanceAmount = Number(form.totalPrice || 0) - Number(form.advancePaid || 0);
+  const balanceAmount =
+    Number(form.totalPrice || 0) - Number(form.advancePaid || 0);
 
   // --- SCREEN OUTPUT ---
   return (
@@ -119,8 +127,11 @@ function AddCustomOrder() {
         {success && savedOrder && (
           <div
             style={{
-              background: "#e8f5e9", padding: "12px", borderRadius: "6px",
-              marginBottom: "12px", border: "1px solid #4CAF50",
+              background: "#e8f5e9",
+              padding: "12px",
+              borderRadius: "6px",
+              marginBottom: "12px",
+              border: "1px solid #4CAF50",
             }}
           >
             <p style={{ margin: 0, fontWeight: "600", color: "#2e7d32" }}>
@@ -132,7 +143,11 @@ function AddCustomOrder() {
 
             {/* WHATSAPP BUTTON — opens WhatsApp with pre-filled receipt message */}
             <button
-              style={{ marginTop: "8px", backgroundColor: "#25D366", width: "100%" }}
+              style={{
+                marginTop: "8px",
+                backgroundColor: "#25D366",
+                width: "100%",
+              }}
               onClick={() => {
                 // Build the message text
                 const message = `
@@ -146,7 +161,7 @@ Phone: ${savedOrder.customerPhone}
 ${savedOrder.notes}
 
 📅 Delivery:
-${new Date(savedOrder.deliveryDate).toLocaleString("en-IN")}
+${new Date(savedOrder.deliveryDate).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
 
 💰 Total: ₹${savedOrder.totalPrice}
 💵 Advance: ₹${savedOrder.advancePaid}
@@ -188,7 +203,9 @@ ${new Date(savedOrder.deliveryDate).toLocaleString("en-IN")}
           value={form.customerPhone}
           onChange={handleChange}
         />
-        {errors.customerPhone && <p className="error">{errors.customerPhone}</p>}
+        {errors.customerPhone && (
+          <p className="error">{errors.customerPhone}</p>
+        )}
 
         {/* DELIVERY DATE & TIME */}
         <label className="label">Delivery Date & Time *</label>
@@ -198,7 +215,9 @@ ${new Date(savedOrder.deliveryDate).toLocaleString("en-IN")}
           value={form.deliveryDateTime}
           onChange={handleChange}
         />
-        {errors.deliveryDateTime && <p className="error">{errors.deliveryDateTime}</p>}
+        {errors.deliveryDateTime && (
+          <p className="error">{errors.deliveryDateTime}</p>
+        )}
 
         {/* ORDER NOTES — very important for custom cakes */}
         <label className="label">📝 Custom Order Notes (VERY IMPORTANT)</label>
@@ -207,7 +226,11 @@ ${new Date(savedOrder.deliveryDate).toLocaleString("en-IN")}
           value={form.notes}
           onChange={handleChange}
           placeholder={`Example:\n• Cake type & weight\n• Flavour\n• Shape & design\n• Name on cake\n• Colour\n• Special instructions`}
-          style={{ minHeight: "160px", border: "2px solid #ff9800", fontSize: "15px" }}
+          style={{
+            minHeight: "160px",
+            border: "2px solid #ff9800",
+            fontSize: "15px",
+          }}
         />
         {errors.notes && <p className="error">{errors.notes}</p>}
 
@@ -230,9 +253,17 @@ ${new Date(savedOrder.deliveryDate).toLocaleString("en-IN")}
 
         {/* BALANCE DISPLAY — read-only, calculated automatically */}
         <input
-          value={balanceAmount > 0 ? `Balance Amount: ₹${balanceAmount}` : "Balance Amount: ₹0"}
+          value={
+            balanceAmount > 0
+              ? `Balance Amount: ₹${balanceAmount}`
+              : "Balance Amount: ₹0"
+          }
           readOnly
-          style={{ background: "#f5f5f5", fontWeight: "600", cursor: "not-allowed" }}
+          style={{
+            background: "#f5f5f5",
+            fontWeight: "600",
+            cursor: "not-allowed",
+          }}
         />
 
         {/* SAVE BUTTON — disabled after success so owner can't double-submit */}
@@ -240,12 +271,17 @@ ${new Date(savedOrder.deliveryDate).toLocaleString("en-IN")}
           onClick={submit}
           disabled={loading || success}
           style={{
-            backgroundColor: "#4CAF50", marginTop: "12px",
+            backgroundColor: "#4CAF50",
+            marginTop: "12px",
             opacity: loading || success ? 0.7 : 1,
             cursor: loading || success ? "not-allowed" : "pointer",
           }}
         >
-          {loading ? "Saving..." : success ? "✔ Order Saved" : "💾 Save Custom Order"}
+          {loading
+            ? "Saving..."
+            : success
+              ? "✔ Order Saved"
+              : "💾 Save Custom Order"}
         </button>
       </div>
 

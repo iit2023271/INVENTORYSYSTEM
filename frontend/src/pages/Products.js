@@ -13,7 +13,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Header       from "../components/Header";
 import ImageCropper from "../components/ImageCropper";
-
+import { useNavigate } from "react-router-dom";
 function Products() {
   // --- STATES ---
   const [products,  setProducts]  = useState([]); // list of all products
@@ -49,7 +49,8 @@ function Products() {
   // --- LOAD DATA ---
   // useCallback prevents these functions from being recreated every render
   // which would cause useEffect to re-run infinitely
-
+  const navigate = useNavigate();
+ 
   const loadProducts = useCallback(() => {
     fetch(`${process.env.REACT_APP_API_URL}/api/products`)
       .then((res)  => res.json())
@@ -182,7 +183,7 @@ function Products() {
         {/* Link to see soft-deleted products */}
         <button
           style={{ marginBottom: "15px", backgroundColor: "#f44336", width: "100%", padding: "10px", borderRadius: "8px", border: "none", color: "white", fontWeight: "bold", cursor: "pointer" }}
-          onClick={() => (window.location.href = "/deleted-products")}
+          onClick={() => navigate("/deleted-products")}
         >
           🗑 View Deleted Products
         </button>
@@ -325,10 +326,9 @@ function Products() {
                     {editingCategoryId === product._id ? (
                       <div style={{ marginBottom: "10px" }}>
                         <select
-                          value={newCategory}
-                          onChange={(e) => setNewCategory(e.target.value)}
-                          style={{ width: "100%", padding: "8px", marginBottom: "5px" }}
-                        >
+  onChange={(e) => setNewCategory(e.target.value)}  // no value= prop
+  style={{ width: "100%", padding: "8px", marginBottom: "5px" }}
+>
                           <option value="">-- Select Category --</option>
                           {allCategories.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
                         </select>

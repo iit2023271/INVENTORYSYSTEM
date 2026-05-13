@@ -89,7 +89,9 @@ exports.getCurrentPrices = async (req, res) => {
 
     // Shape the response to be clean and frontend-friendly.
     // Instead of a nested object, flatten it to { productId, name, price }.
-    const result = prices.map(p => ({
+    const result = prices
+    .filter(p => p.productId != null)  // ADD THIS
+    .map(p => ({
       productId: p.productId._id,
       name:      p.productId.name,
       price:     p.price

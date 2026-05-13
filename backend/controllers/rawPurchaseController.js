@@ -24,7 +24,6 @@
 
 const RawPurchase = require("../models/RawPurchase");
 
-
 // ============================================================
 // ADD A RAW PURCHASE RECORD
 // Route: POST /api/raw-purchases
@@ -32,14 +31,21 @@ const RawPurchase = require("../models/RawPurchase");
 // ============================================================
 exports.addRawPurchase = async (req, res) => {
   try {
-
     const { rawMaterial, quantity, rate } = req.body;
 
     // ── Validate: all three fields are required and positive ──
-    // quantity <= 0 or rate <= 0 would be nonsensical (can't buy negative amounts).
-    if (!rawMaterial || quantity <= 0 || rate <= 0) {
+    // Use == null to catch both undefined and null values. Quantity and
+    // rate must be present and greater than zero; otherwise the record
+    // is invalid.
+    if (
+      !rawMaterial ||
+      quantity == null ||
+      quantity <= 0 ||
+      rate == null ||
+      rate <= 0
+    ) {
       return res.status(400).json({
-        message: "Raw material, quantity and rate are required"
+        message: "Raw material, quantity and rate are required",
       });
     }
 
@@ -51,21 +57,19 @@ exports.addRawPurchase = async (req, res) => {
     // status defaults to "Pending" (set in the model schema).
     // purchaseDate = now (when the purchase was recorded).
     const purchase = await RawPurchase.create({
-      rawMaterial,             // reference to RawMaterial document (ObjectId)
+      rawMaterial, // reference to RawMaterial document (ObjectId)
       quantity,
       rate,
       totalCost,
-      purchaseDate: new Date() // record the current timestamp
+      purchaseDate: new Date(), // record the current timestamp
     });
 
     res.status(201).json(purchase); // 201 = Created
-
   } catch (error) {
     console.error("ADD RAW PURCHASE ERROR:", error);
     res.status(500).json({ message: "Failed to add raw purchase" });
   }
 };
-
 
 // ============================================================
 // MARK A PURCHASE AS DONE (confirmed received & paid)
@@ -73,7 +77,6 @@ exports.addRawPurchase = async (req, res) => {
 // ============================================================
 exports.markPurchaseDone = async (req, res) => {
   try {
-
     const purchase = await RawPurchase.findById(req.params.id);
 
     if (!purchase) {
@@ -86,12 +89,10 @@ exports.markPurchaseDone = async (req, res) => {
     await purchase.save();
 
     res.json({ message: "Purchase marked as done" });
-
   } catch (error) {
     res.status(500).json({ message: "Failed to update status" });
   }
 };
-
 
 // ============================================================
 // GET RAW PURCHASES (optionally filtered by date)
@@ -99,7 +100,6 @@ exports.markPurchaseDone = async (req, res) => {
 // ============================================================
 exports.getRawPurchases = async (req, res) => {
   try {
-
     let filter = {};
 
     // If a date query param is provided, filter by that specific day
@@ -118,13 +118,12 @@ exports.getRawPurchases = async (req, res) => {
     // .sort({ createdAt: -1 }) → newest purchases first
     const purchases = await RawPurchase.find(filter)
       .populate({
-        path:   "rawMaterial",
-        select: "name unit isActive" // only include these fields from RawMaterial
+        path: "rawMaterial",
+        select: "name unit isActive", // only include these fields from RawMaterial
       })
       .sort({ createdAt: -1 });
 
     res.json(purchases);
-
   } catch (error) {
     console.error("GET RAW PURCHASE ERROR:", error);
     res.status(500).json({ message: "Failed to load raw purchases" });

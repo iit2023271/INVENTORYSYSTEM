@@ -20,10 +20,11 @@
 const express = require("express");
 const router = express.Router();
 const { getCustomers } = require("../controllers/customerController");
+const authMiddleware = require("../middleware/authMiddleware");
 
 // GET /api/customers
 // Returns a list of unique customers grouped by phone number,
 // each with their normal orders and custom orders.
-router.get("/", getCustomers);
+router.get("/", authMiddleware, getCustomers);
 
 module.exports = router;

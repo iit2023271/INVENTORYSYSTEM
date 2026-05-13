@@ -122,8 +122,10 @@ exports.getTodayStock = async (req, res) => {
     });
 
     // ── STEP 4: Auto-disable products with no/zero stock ──────
-    // Fetch ALL products (including currently active ones)
-    const products = await Product.find();
+    // Fetch only non-deleted products. There's no point disabling
+    // a soft-deleted product, and doing so could trigger unnecessary
+    // DB updates.
+    const products = await Product.find({ isDeleted: false });
 
     for (const product of products) {
       const todayQty = stockMap[product._id.toString()];

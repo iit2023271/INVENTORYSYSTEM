@@ -5,57 +5,101 @@
 //   2. Monthly — pick a month, see totals
 //   3. Custom date range — pick From and To dates
 //
-// A simple horizontal bar is drawn for each value using a 
+// A simple horizontal bar is drawn for each value using a
 // <div> with a dynamic width percentage — no chart library needed.
 // ============================================================
 
 import { useEffect, useState } from "react";
 import Header from "../components/Header";
 
-// Convert "YYYY-MM" month string to full ISO date range
+// Convert "YYYY-MM" month string to date range in YYYY-MM-DD format (browser local time)
 const getMonthRange = (month) => {
   const [year, m] = month.split("-");
-  const start = new Date(Number(year), Number(m) - 1, 1, 0, 0, 0);
-  const end   = new Date(Number(year), Number(m), 0, 23, 59, 59, 999);
-  return { from: start.toISOString(), to: end.toISOString() };
+  const start = new Date(Number(year), Number(m) - 1, 1);
+  const end = new Date(Number(year), Number(m), 0);
+
+  // Format as YYYY-MM-DD using local date, not UTC
+  const formatLocalDate = (d) => {
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    return `${y}-${mo}-${da}`;
+  };
+
+  return { from: formatLocalDate(start), to: formatLocalDate(end) };
 };
 
 // Calculate bar width as a percentage of the max value
-const getPercent = (value, max) => max === 0 ? "0%" : `${(value / max) * 100}%`;
+const getPercent = (value, max) =>
+  max === 0 ? "0%" : `${(value / max) * 100}%`;
+
+// Get today's date in YYYY-MM-DD format using BROWSER LOCAL TIME (not UTC)
+const getToday = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+// Get current month in YYYY-MM format using BROWSER LOCAL TIME
+const getThisMonth = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
+};
 
 function Reports() {
   const token = localStorage.getItem("token");
   const [rangeError, setRangeError] = useState("");
 
-  // Daily states
-  const [profitDate,   setProfitDate]   = useState(new Date().toISOString().split("T")[0]);
-  const [expenseDate,  setExpenseDate]  = useState(new Date().toISOString().split("T")[0]);
-  const [dailyProfit,  setDailyProfit]  = useState(null);
+  // Daily states — initialize with TODAY, not stale cached date
+  const [profitDate, setProfitDate] = useState(getToday());
+  const [expenseDate, setExpenseDate] = useState(getToday());
+  const [dailyProfit, setDailyProfit] = useState(null);
   const [dailyExpense, setDailyExpense] = useState(null);
 
   // Monthly states
-  const [month,         setMonth]         = useState(new Date().toISOString().slice(0, 7));
+  const [month, setMonth] = useState(getThisMonth());
   const [monthlyReport, setMonthlyReport] = useState(null);
 
   // Range states
-  const [fromDate,    setFromDate]    = useState("");
-  const [toDate,      setToDate]      = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [rangeReport, setRangeReport] = useState(null);
+
+  // Force reset to today on every mount (clears stale data)
+  useEffect(() => {
+    setProfitDate(getToday());
+    setExpenseDate(getToday());
+    setMonth(getThisMonth());
+    setDailyProfit(null);
+    setDailyExpense(null);
+    setMonthlyReport(null);
+    setRangeReport(null);
+  }, []);
 
   // Fetch daily profit whenever the date changes
   useEffect(() => {
-    fetch(`${process.env.REACT_APP_API_URL}/api/profit-reports/daily-profit?date=${profitDate}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    fetch(
+      `${process.env.REACT_APP_API_URL}/api/profit-reports/daily-profit?date=${profitDate}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    )
       .then((res) => res.json())
       .then(setDailyProfit);
   }, [profitDate, token]);
 
   // Fetch daily expense
   useEffect(() => {
-    fetch(`${process.env.REACT_APP_API_URL}/api/expense-reports/daily-expense?date=${expenseDate}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    fetch(
+      `${process.env.REACT_APP_API_URL}/api/expense-reports/daily-expense?date=${expenseDate}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    )
       .then((res) => res.json())
       .then(setDailyExpense);
   }, [expenseDate, token]);
@@ -63,9 +107,12 @@ function Reports() {
   // Fetch monthly report
   useEffect(() => {
     const { from, to } = getMonthRange(month);
-    fetch(`${process.env.REACT_APP_API_URL}/api/profit-reports/range-profit?from=${from}&to=${to}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    fetch(
+      `${process.env.REACT_APP_API_URL}/api/profit-reports/range-profit?from=${from}&to=${to}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    )
       .then((res) => res.json())
       .then(setMonthlyReport);
   }, [month, token]);
@@ -77,9 +124,12 @@ function Reports() {
       return;
     }
     setRangeError("");
-    fetch(`${process.env.REACT_APP_API_URL}/api/profit-reports/range-profit?from=${fromDate}&to=${toDate}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    fetch(
+      `${process.env.REACT_APP_API_URL}/api/profit-reports/range-profit?from=${fromDate}&to=${toDate}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    )
       .then((res) => res.json())
       .then(setRangeReport);
   };
@@ -89,9 +139,19 @@ function Reports() {
     return <p style={{ textAlign: "center" }}>Loading reports...</p>;
   }
 
-  const dailyMax   = Math.max(dailyProfit.totalSales, dailyProfit.totalExpense, 1);
-  const monthlyMax = Math.max(monthlyReport.totalSales, monthlyReport.totalExpense, 1);
-  const rangeMax   = rangeReport ? Math.max(rangeReport.totalSales, rangeReport.totalExpense, 1) : 1;
+  const dailyMax = Math.max(
+    dailyProfit.totalSales,
+    dailyProfit.totalExpense,
+    1,
+  );
+  const monthlyMax = Math.max(
+    monthlyReport.totalSales,
+    monthlyReport.totalExpense,
+    1,
+  );
+  const rangeMax = rangeReport
+    ? Math.max(rangeReport.totalSales, rangeReport.totalExpense, 1)
+    : 1;
 
   return (
     <>
@@ -118,16 +178,36 @@ function Reports() {
           {/* Sales bar */}
           <p>Sales: ₹{dailyProfit.totalSales}</p>
           <div style={{ background: "#eee", borderRadius: "6px" }}>
-            <div style={{ width: getPercent(dailyProfit.totalSales, dailyMax), height: "8px", background: "#4CAF50", borderRadius: "6px" }} />
+            <div
+              style={{
+                width: getPercent(dailyProfit.totalSales, dailyMax),
+                height: "8px",
+                background: "#4CAF50",
+                borderRadius: "6px",
+              }}
+            />
           </div>
 
           {/* Expense bar */}
           <p>Expense: ₹{dailyProfit.totalExpense}</p>
           <div style={{ background: "#eee", borderRadius: "6px" }}>
-            <div style={{ width: getPercent(dailyProfit.totalExpense, dailyMax), height: "8px", background: "#f44336", borderRadius: "6px" }} />
+            <div
+              style={{
+                width: getPercent(dailyProfit.totalExpense, dailyMax),
+                height: "8px",
+                background: "#f44336",
+                borderRadius: "6px",
+              }}
+            />
           </div>
 
-          <p style={{ fontWeight: "bold", marginTop: "10px", color: dailyProfit.profit >= 0 ? "green" : "red" }}>
+          <p
+            style={{
+              fontWeight: "bold",
+              marginTop: "10px",
+              color: dailyProfit.profit >= 0 ? "green" : "red",
+            }}
+          >
             Profit: ₹{dailyProfit.profit}
           </p>
         </div>
@@ -135,19 +215,43 @@ function Reports() {
         {/* MONTHLY SUMMARY */}
         <div className="card">
           <h3>📆 Monthly Summary</h3>
-          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
+          <input
+            type="month"
+            value={month}
+            onChange={(e) => setMonth(e.target.value)}
+          />
 
           <p>Sales: ₹{monthlyReport.totalSales}</p>
           <div style={{ background: "#eee", borderRadius: "6px" }}>
-            <div style={{ width: getPercent(monthlyReport.totalSales, monthlyMax), height: "8px", background: "#4CAF50", borderRadius: "6px" }} />
+            <div
+              style={{
+                width: getPercent(monthlyReport.totalSales, monthlyMax),
+                height: "8px",
+                background: "#4CAF50",
+                borderRadius: "6px",
+              }}
+            />
           </div>
 
           <p>Expense: ₹{monthlyReport.totalExpense}</p>
           <div style={{ background: "#eee", borderRadius: "6px" }}>
-            <div style={{ width: getPercent(monthlyReport.totalExpense, monthlyMax), height: "8px", background: "#f44336", borderRadius: "6px" }} />
+            <div
+              style={{
+                width: getPercent(monthlyReport.totalExpense, monthlyMax),
+                height: "8px",
+                background: "#f44336",
+                borderRadius: "6px",
+              }}
+            />
           </div>
 
-          <p style={{ fontWeight: "bold", marginTop: "10px", color: monthlyReport.profit >= 0 ? "green" : "red" }}>
+          <p
+            style={{
+              fontWeight: "bold",
+              marginTop: "10px",
+              color: monthlyReport.profit >= 0 ? "green" : "red",
+            }}
+          >
             Profit: ₹{monthlyReport.profit}
           </p>
         </div>
@@ -156,23 +260,61 @@ function Reports() {
         <div className="card">
           <h3>📅 Custom Date Summary</h3>
           <label>From</label>
-          <input type="date" value={fromDate} onChange={(e) => { setFromDate(e.target.value); setRangeError(""); }} />
-          <input type="date" value={toDate}   onChange={(e) => { setToDate(e.target.value);   setRangeError(""); }} />
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => {
+              setFromDate(e.target.value);
+              setRangeError("");
+            }}
+          />
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => {
+              setToDate(e.target.value);
+              setRangeError("");
+            }}
+          />
           <button onClick={fetchRangeReport}>View Report</button>
 
-          {rangeError && <p style={{ color: "red", fontSize: "14px", marginTop: "8px" }}>{rangeError}</p>}
+          {rangeError && (
+            <p style={{ color: "red", fontSize: "14px", marginTop: "8px" }}>
+              {rangeError}
+            </p>
+          )}
 
           {rangeReport && (
             <>
               <p>Sales: ₹{rangeReport.totalSales}</p>
               <div style={{ background: "#eee", borderRadius: "6px" }}>
-                <div style={{ width: getPercent(rangeReport.totalSales, rangeMax), height: "8px", background: "#4CAF50", borderRadius: "6px" }} />
+                <div
+                  style={{
+                    width: getPercent(rangeReport.totalSales, rangeMax),
+                    height: "8px",
+                    background: "#4CAF50",
+                    borderRadius: "6px",
+                  }}
+                />
               </div>
               <p>Expense: ₹{rangeReport.totalExpense}</p>
               <div style={{ background: "#eee", borderRadius: "6px" }}>
-                <div style={{ width: getPercent(rangeReport.totalExpense, rangeMax), height: "8px", background: "#f44336", borderRadius: "6px" }} />
+                <div
+                  style={{
+                    width: getPercent(rangeReport.totalExpense, rangeMax),
+                    height: "8px",
+                    background: "#f44336",
+                    borderRadius: "6px",
+                  }}
+                />
               </div>
-              <p style={{ fontWeight: "bold", marginTop: "10px", color: rangeReport.profit >= 0 ? "green" : "red" }}>
+              <p
+                style={{
+                  fontWeight: "bold",
+                  marginTop: "10px",
+                  color: rangeReport.profit >= 0 ? "green" : "red",
+                }}
+              >
                 Profit: ₹{rangeReport.profit}
               </p>
             </>

@@ -127,7 +127,7 @@ app.use("/api/raw-purchases",   require("./routes/rawPurchaseRoutes"));
 app.use("/api/raw-materials",   require("./routes/rawMaterialRoutes"));
 app.use("/api/expense-reports", require("./routes/expenseReportRoutes"));
 app.use("/api/profit-reports",  require("./routes/profitReportRoutes"));
-app.use("/api/categories",      require("./routes/categoryRoutes"));
+
 app.use("/api/prices",          require("./routes/productPriceRoutes"));
 app.use("/api/stock",           require("./routes/stockRoutes"));
 app.use("/api/customers",       require("./routes/customerRoutes"));

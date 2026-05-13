@@ -33,25 +33,25 @@
 const express = require("express");
 const router = express.Router();
 const controller = require("../controllers/customOrderController");
-
+const authMiddleware = require("../middleware/authMiddleware");
 // POST /api/custom-orders
 // Create a new custom order (customer submits order details + delivery date)
-router.post("/", controller.createCustomOrder);
+router.post("/",authMiddleware, controller.createCustomOrder);
 
 // GET /api/custom-orders?date=2024-12-25
 // Fetch custom orders, optionally filtered by delivery date
-router.get("/", controller.getCustomOrders);
+router.get("/",authMiddleware, controller.getCustomOrders);
 
 // PUT /api/custom-orders/:id/done
 // Mark a Pending order as Done (item is prepared, awaiting collection)
-router.put("/:id/done", controller.markCustomOrderDone);
+router.put("/:id/done",     authMiddleware, controller.markCustomOrderDone);
 
 // PUT /api/custom-orders/:id/complete
 // Mark a Done order as Completed (customer collected + full payment received)
-router.put("/:id/complete", controller.completeCustomOrder);
+router.put("/:id/complete", authMiddleware, controller.completeCustomOrder);
 
 // PUT /api/custom-orders/:id/cancel
 // Cancel a Pending or Done order (Completed orders cannot be cancelled)
-router.put("/:id/cancel", controller.cancelCustomOrder);
+router.put("/:id/cancel",   authMiddleware, controller.cancelCustomOrder);
 
 module.exports = router;

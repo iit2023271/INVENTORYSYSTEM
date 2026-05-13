@@ -32,9 +32,8 @@
 //       req.file.filename = the Cloudinary public_id (used for deletion)
 // ============================================================
 
-const Product    = require("../models/Product");
+const Product = require("../models/Product");
 const { cloudinary } = require("../middleware/cloudinaryConfig");
-
 
 // ============================================================
 // ADD A PRODUCT (with optional image upload)
@@ -43,7 +42,6 @@ const { cloudinary } = require("../middleware/cloudinaryConfig");
 // ============================================================
 exports.addProduct = async (req, res) => {
   try {
-
     const { name, category, lowStockLevel } = req.body;
 
     // ── Validate required fields ──────────────────────────────
@@ -57,20 +55,18 @@ exports.addProduct = async (req, res) => {
     const product = new Product({
       name,
       category,
-      lowStockLevel: lowStockLevel || 5, // default low-stock alert threshold = 5
-      image:        req.file ? req.file.path     : "", // Cloudinary URL
-      cloudinaryId: req.file ? req.file.filename : ""  // Cloudinary public_id
+      lowStockLevel: Number(lowStockLevel) || 5, // default low-stock alert threshold = 5
+      image: req.file ? req.file.path : "", // Cloudinary URL
+      cloudinaryId: req.file ? req.file.filename : "", // Cloudinary public_id
     });
 
     await product.save();
     res.status(201).json(product);
-
   } catch (err) {
     console.error("ADD PRODUCT ERROR:", err);
     res.status(500).json({ message: err.message });
   }
 };
-
 
 // ============================================================
 // GET ALL PRODUCTS (active + inactive, but not deleted)
@@ -78,18 +74,15 @@ exports.addProduct = async (req, res) => {
 // ============================================================
 exports.getProducts = async (req, res) => {
   try {
-
     // Fetch all products that have NOT been soft-deleted.
     // This includes both active (in-stock) and inactive (out-of-stock) products.
     // The owner needs to see all of them to manage stock.
     const products = await Product.find({ isDeleted: false });
     res.json(products);
-
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
-
 
 // ============================================================
 // UPDATE PRODUCT IMAGE
@@ -98,10 +91,14 @@ exports.getProducts = async (req, res) => {
 // ============================================================
 exports.updateProductImage = async (req, res) => {
   try {
-
     const product = await Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
+    }
+
+    // ── Require an image file to proceed ─────────────────────
+    if (!req.file) {
+      return res.status(400).json({ message: "Image file is required" });
     }
 
     // ── Delete the OLD image from Cloudinary first ────────────
@@ -118,18 +115,16 @@ exports.updateProductImage = async (req, res) => {
     }
 
     // ── Save the new image details ────────────────────────────
-    product.image        = req.file.path;     // new Cloudinary URL
+    product.image = req.file.path; // new Cloudinary URL
     product.cloudinaryId = req.file.filename; // new public_id for future deletion
     await product.save();
 
     res.json(product);
-
   } catch (err) {
     console.error("UPDATE IMAGE ERROR:", err);
     res.status(500).json({ message: err.message });
   }
 };
-
 
 // ============================================================
 // SOFT DELETE A PRODUCT (also removes image from Cloudinary)
@@ -137,7 +132,6 @@ exports.updateProductImage = async (req, res) => {
 // ============================================================
 exports.deleteProduct = async (req, res) => {
   try {
-
     const product = await Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
@@ -158,17 +152,15 @@ exports.deleteProduct = async (req, res) => {
     // ── Soft delete: mark as deleted and deactivate ───────────
     // We do NOT call product.remove() — that would permanently erase it.
     product.isDeleted = true;
-    product.isActive  = false;
+    product.isActive = false;
     await product.save();
 
     res.json({ message: "Product deleted" });
-
   } catch (err) {
     console.error("DELETE PRODUCT ERROR:", err);
     res.status(500).json({ message: err.message });
   }
 };
-
 
 // ============================================================
 // GET DELETED (ARCHIVED) PRODUCTS
@@ -176,15 +168,12 @@ exports.deleteProduct = async (req, res) => {
 // ============================================================
 exports.getDeletedProducts = async (req, res) => {
   try {
-
     const products = await Product.find({ isDeleted: true });
     res.json(products);
-
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
-
 
 // ============================================================
 // RESTORE A SOFT-DELETED PRODUCT
@@ -192,7 +181,6 @@ exports.getDeletedProducts = async (req, res) => {
 // ============================================================
 exports.restoreProduct = async (req, res) => {
   try {
-
     const product = await Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
@@ -200,17 +188,15 @@ exports.restoreProduct = async (req, res) => {
 
     // Flip both flags back to their active state
     product.isDeleted = false;
-    product.isActive  = true;
+    product.isActive = true;
     await product.save();
 
     res.json({ message: "Product restored" });
-
   } catch (err) {
     console.error("RESTORE PRODUCT ERROR:", err);
     res.status(500).json({ message: err.message });
   }
 };
-
 
 // ============================================================
 // UPDATE PRODUCT NAME
@@ -219,7 +205,6 @@ exports.restoreProduct = async (req, res) => {
 // ============================================================
 exports.updateProductName = async (req, res) => {
   try {
-
     const { name } = req.body;
 
     // Validate: name must be non-empty after trimming whitespace
@@ -233,7 +218,7 @@ exports.updateProductName = async (req, res) => {
     const product = await Product.findByIdAndUpdate(
       req.params.id,
       { name: name.trim() }, // .trim() removes leading/trailing spaces
-      { new: true }
+      { new: true },
     );
 
     if (!product) {
@@ -241,13 +226,11 @@ exports.updateProductName = async (req, res) => {
     }
 
     res.json(product);
-
   } catch (err) {
     console.error("UPDATE NAME ERROR:", err);
     res.status(500).json({ message: err.message });
   }
 };
-
 
 // ============================================================
 // DISABLE A PRODUCT (temporarily hide from customers)
@@ -255,7 +238,6 @@ exports.updateProductName = async (req, res) => {
 // ============================================================
 exports.disableProduct = async (req, res) => {
   try {
-
     const product = await Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
@@ -267,13 +249,11 @@ exports.disableProduct = async (req, res) => {
     await product.save();
 
     res.json({ message: "Product disabled" });
-
   } catch (err) {
     console.error("DISABLE PRODUCT ERROR:", err);
     res.status(500).json({ message: "Failed to disable product" });
   }
 };
-
 
 // ============================================================
 // ENABLE A PRODUCT (make it available to customers again)
@@ -281,7 +261,6 @@ exports.disableProduct = async (req, res) => {
 // ============================================================
 exports.enableProduct = async (req, res) => {
   try {
-
     const product = await Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
@@ -291,13 +270,11 @@ exports.enableProduct = async (req, res) => {
     await product.save();
 
     res.json({ message: "Product enabled" });
-
   } catch (err) {
     console.error("ENABLE PRODUCT ERROR:", err);
     res.status(500).json({ message: "Failed to enable product" });
   }
 };
-
 
 // ============================================================
 // UPDATE PRODUCT CATEGORY
@@ -306,7 +283,6 @@ exports.enableProduct = async (req, res) => {
 // ============================================================
 exports.updateProductCategory = async (req, res) => {
   try {
-
     const { category } = req.body;
 
     if (!category || !category.trim()) {
@@ -316,7 +292,7 @@ exports.updateProductCategory = async (req, res) => {
     const product = await Product.findByIdAndUpdate(
       req.params.id,
       { category: category.trim() },
-      { new: true }
+      { new: true },
     );
 
     if (!product) {
@@ -324,7 +300,6 @@ exports.updateProductCategory = async (req, res) => {
     }
 
     res.json(product);
-
   } catch (err) {
     console.error("UPDATE CATEGORY ERROR:", err);
     res.status(500).json({ message: "Failed to update category" });
